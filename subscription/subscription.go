@@ -3,7 +3,6 @@ package subscription
 import (
 	"encoding/json"
 	"errors"
-	"log"
 	"os"
 	"os/signal"
 	"regexp"
@@ -26,8 +25,8 @@ type Match struct {
 	MakerOrderID string    `json:"maker_order_id"`
 	TakerOrderID string    `json:"taker_order_id"`
 	Side         string    `json:"side"`
-	Size         string    `json:"size"`
-	Price        string    `json:"price"`
+	Size         float32   `json:"size,string"`
+	Price        float32   `json:"price,string"`
 	ProductID    string    `json:"product_id"`
 	Sequence     int64     `json:"sequence"`
 	Time         time.Time `json:"time"`
@@ -35,7 +34,7 @@ type Match struct {
 
 // Subscriber holds the methods relating to setting up a connection to a match channel
 type Subscriber interface {
-	SubscribeToMatches(address string, pairs []string) (matchStream <-chan Match)
+	SubscribeToMatches(address string, pairs []string) <-chan Match
 }
 
 func SubscribeToMatches(address string, pairs []string) (<-chan Match, error) {
@@ -43,7 +42,7 @@ func SubscribeToMatches(address string, pairs []string) (<-chan Match, error) {
 		return nil, ErrInvalidPair
 	}
 
-	logger.Log.Debugf("Connecting to: %s", address)
+	logger.Log.Debug("Connecting to:", address)
 
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
@@ -82,7 +81,7 @@ func SubscribeToMatches(address string, pairs []string) (<-chan Match, error) {
 				// Inspired from: https://github.com/gorilla/websocket/blob/master/examples/echo/client.go#L71
 				err := conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 				if err != nil {
-					log.Println("ws close:", err)
+					logger.Log.Error("ws close:", err)
 					return
 				}
 				conn.Close()
@@ -94,14 +93,16 @@ func SubscribeToMatches(address string, pairs []string) (<-chan Match, error) {
 					}).Error("error reading websocket message")
 					return
 				}
-				// Error messages are purposely ignored to keep getting messages
+
 				var match Match
 				err = json.Unmarshal(message, &match)
 				if err != nil {
 					logger.Log.WithFields(logrus.Fields{
 						"error": err.Error(),
 					}).Error("error parsing websocket message")
+					continue
 				}
+
 				matches <- match
 			}
 		}
