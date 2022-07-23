@@ -8,7 +8,7 @@ import (
 	"text/tabwriter"
 	"time"
 
-	logger "github.com/rem1niscence/realtime-VWAP/shared/log"
+	logger "github.com/rem1niscence/realtime-VWAP/pkg/log"
 	"github.com/rem1niscence/realtime-VWAP/subscription"
 	calculator "github.com/rem1niscence/realtime-VWAP/vwap_calculator"
 	"github.com/sirupsen/logrus"

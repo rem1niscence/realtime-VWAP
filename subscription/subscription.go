@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	logger "github.com/rem1niscence/realtime-VWAP/shared/log"
+	logger "github.com/rem1niscence/realtime-VWAP/pkg/log"
 	"github.com/sirupsen/logrus"
 )
 
