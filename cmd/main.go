@@ -8,9 +8,9 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/rem1niscence/realtime-VWAP/calculator"
 	logger "github.com/rem1niscence/realtime-VWAP/shared/log"
 	"github.com/rem1niscence/realtime-VWAP/subscription"
+	calculator "github.com/rem1niscence/realtime-VWAP/vwap_calculator"
 	"github.com/sirupsen/logrus"
 )
 
@@ -42,14 +42,9 @@ func main() {
 		pairsVWAP[vwap.Pair] = vwap.VWAP
 
 		w := new(tabwriter.Writer)
-
-		// minwidth, tabwidth, padding, padchar, flags
 		w.Init(os.Stdout, 8, 8, 1, '\t', 0)
-
-		fmt.Println()
 		fmt.Fprintf(w, "%s\t%s\t\n", "Pair", "VWAP")
 		fmt.Fprintf(w, "%s\t%s\t\n", "-------", "----")
-
 		for pair, value := range pairsVWAP {
 			fmt.Fprintf(w, "%s\t%.6f\t\n", pair, value)
 		}
