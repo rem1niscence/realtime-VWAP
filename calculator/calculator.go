@@ -1,12 +1,19 @@
 package calculator
 
 import (
+	"errors"
+
 	"github.com/rem1niscence/realtime-VWAP/subscription"
 )
 
 type Calculator interface {
 	StreamPairsVWAP(matches <-chan subscription.Match, dataPoints int) <-chan *VWAP
 }
+
+var (
+	// ErrInvalidLimit when a limit under 1 is given
+	ErrInvalidLimit = errors.New("invalid limit value. Must be at least 1 or more")
+)
 
 type Trade struct {
 	Quantity float32
@@ -16,8 +23,8 @@ type Trade struct {
 type PairVWAP struct {
 	Trades                     []*Trade
 	Limit                      int
-	TotalQuantity              float32
-	TotalWeightedQuantityPrice float32
+	totalQuantity              float32
+	totalWeightedQuantityPrice float32
 	vWAP                       float32
 }
 
@@ -28,7 +35,7 @@ type VWAP struct {
 
 // calculateVWAP calculates, saves and retrieves the vwap value of a pair
 func (pr *PairVWAP) calculateVWAP() float32 {
-	pr.vWAP = pr.TotalWeightedQuantityPrice / pr.TotalQuantity
+	pr.vWAP = pr.totalWeightedQuantityPrice / pr.totalQuantity
 	return pr.vWAP
 }
 
@@ -48,20 +55,24 @@ func (pr *PairVWAP) AggregateTrade(pair string, trade *Trade) float32 {
 			pr.Trades = pr.Trades[1:]
 		}
 
-		pr.TotalWeightedQuantityPrice -= oldestPairPrice * oldestPairQuantity
-		pr.TotalQuantity -= oldestPairQuantity
+		pr.totalWeightedQuantityPrice -= oldestPairPrice * oldestPairQuantity
+		pr.totalQuantity -= oldestPairQuantity
 	}
 
 	pr.Trades = append(pr.Trades, trade)
-	pr.TotalWeightedQuantityPrice += trade.Price * trade.Quantity
-	pr.TotalQuantity += trade.Quantity
+	pr.totalWeightedQuantityPrice += trade.Price * trade.Quantity
+	pr.totalQuantity += trade.Quantity
 
 	return pr.calculateVWAP()
 }
 
-func StreamPairsVWAP(matches <-chan subscription.Match, dataPoints int) <-chan *VWAP {
+func StreamPairsVWAP(matches <-chan subscription.Match, dataPoints int) (<-chan *VWAP, error) {
 	vwapStream := make(chan *VWAP)
 	tradingPairs := map[string]*PairVWAP{}
+
+	if dataPoints <= 0 {
+		return nil, ErrInvalidLimit
+	}
 
 	go func() {
 		for match := range matches {
@@ -91,5 +102,5 @@ func StreamPairsVWAP(matches <-chan subscription.Match, dataPoints int) <-chan *
 		}
 	}()
 
-	return vwapStream
+	return vwapStream, nil
 }
