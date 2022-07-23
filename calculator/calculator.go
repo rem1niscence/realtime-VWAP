@@ -52,7 +52,7 @@ func StreamPairsVWAP(matches <-chan subscription.Match, dataPoints int) <-chan *
 			if !ok {
 				tradingPairs[match.ProductID] = &PairVWAP{
 					// As we already know beforehand the maximum size of this slice, Preallocating it will
-					// add a performance boost but will also create the need of having to manage the actual used
+					// add a performance boost but also create the need of having to manage the actual used
 					// space for each pair in another field. IMO for this case such optimization is not needed.
 					Trades: []*Trade{},
 					Limit:  dataPoints,
