@@ -9,21 +9,21 @@ type Calculator interface {
 }
 
 type Trade struct {
-	Quantity float32 `json:"size"`
-	Price    float32 `json:"price"`
+	Quantity float32
+	Price    float32
 }
 
 type PairVWAP struct {
 	Trades                     []*Trade
 	Limit                      int
-	TotalQuantity              float32 `json:"totalTradesQuantity"`
-	TotalWeightedQuantityPrice float32 `json:"totalTradesPriceTimesQuantity"`
+	TotalQuantity              float32
+	TotalWeightedQuantityPrice float32
 	vWAP                       float32
 }
 
 type VWAP struct {
-	Pair string  `json:"pair"`
-	VWAP float32 `json:"vwap"`
+	Pair string
+	VWAP float32
 }
 
 // calculateVWAP calculates, saves and retrieves the vwap value of a pair
@@ -35,6 +35,28 @@ func (pr *PairVWAP) calculateVWAP() float32 {
 // Returns VWAP for a trading pair, -1 if no pair trade has been added
 func (pr *PairVWAP) GetVWAP() float32 {
 	return pr.vWAP
+}
+
+func (pr *PairVWAP) AggregateTrade(pair string, trade *Trade) float32 {
+	if len(pr.Trades) >= pr.Limit {
+		oldestPairQuantity := pr.Trades[0].Quantity
+		oldestPairPrice := pr.Trades[0].Price
+
+		if pr.Limit == 1 {
+			pr.Trades = nil
+		} else {
+			pr.Trades = pr.Trades[1:]
+		}
+
+		pr.TotalWeightedQuantityPrice -= oldestPairPrice * oldestPairQuantity
+		pr.TotalQuantity -= oldestPairQuantity
+	}
+
+	pr.Trades = append(pr.Trades, trade)
+	pr.TotalWeightedQuantityPrice += trade.Price * trade.Quantity
+	pr.TotalQuantity += trade.Quantity
+
+	return pr.calculateVWAP()
 }
 
 func StreamPairsVWAP(matches <-chan subscription.Match, dataPoints int) <-chan *VWAP {
@@ -70,26 +92,4 @@ func StreamPairsVWAP(matches <-chan subscription.Match, dataPoints int) <-chan *
 	}()
 
 	return vwapStream
-}
-
-func (pr *PairVWAP) AggregateTrade(pair string, trade *Trade) float32 {
-	if len(pr.Trades) >= pr.Limit {
-		oldestPairQuantity := pr.Trades[0].Quantity
-		oldestPairPrice := pr.Trades[0].Price
-
-		if pr.Limit == 1 {
-			pr.Trades = nil
-		} else {
-			pr.Trades = pr.Trades[1:]
-		}
-
-		pr.TotalWeightedQuantityPrice -= oldestPairPrice * oldestPairQuantity
-		pr.TotalQuantity -= oldestPairQuantity
-	}
-
-	pr.Trades = append(pr.Trades, trade)
-	pr.TotalWeightedQuantityPrice += trade.Price * trade.Quantity
-	pr.TotalQuantity += trade.Quantity
-
-	return pr.calculateVWAP()
 }
