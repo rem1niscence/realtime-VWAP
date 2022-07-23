@@ -15,14 +15,15 @@ import (
 )
 
 func main() {
-	pairs := []string{"BTC-USD", "ETH-USD", "ETH-BTC"}
-	matches, err := subscription.SubscribeToMatches("wss://ws-feed.exchange.coinbase.com", pairs)
+	options := GatherVWAPCalculatorOptions()
+
+	matches, err := subscription.SubscribeToMatches(options.OriginURL, options.Pairs)
 	if err != nil {
 		logger.Log.WithFields(logrus.Fields{
 			"error": err.Error(),
 		}).Fatal("error subscribing to matches")
 	}
-	vwaps, err := calculator.StreamPairsVWAP(matches, 200)
+	vwaps, err := calculator.StreamPairsVWAP(matches, options.Limit)
 	if err != nil {
 		logger.Log.WithFields(logrus.Fields{
 			"error": err.Error(),
