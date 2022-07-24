@@ -21,8 +21,8 @@ type Trade struct {
 }
 
 type PairVWAP struct {
-	Trades                     []*Trade
-	Limit                      int
+	trades                     []*Trade
+	limit                      int
 	totalQuantity              float32
 	totalWeightedQuantityPrice float32
 	vWAP                       float32
@@ -33,33 +33,43 @@ type VWAP struct {
 	VWAP float32
 }
 
+func NewPairVWAP(limit int) (*PairVWAP, error) {
+	if limit <= 0 {
+		return nil, ErrInvalidLimit
+	}
+
+	return &PairVWAP{
+		limit: limit,
+	}, nil
+}
+
 // calculateVWAP calculates, saves and retrieves the vwap value of a pair
 func (pr *PairVWAP) calculateVWAP() float32 {
 	pr.vWAP = pr.totalWeightedQuantityPrice / pr.totalQuantity
 	return pr.vWAP
 }
 
-// Returns VWAP for a trading pair, -1 if no pair trade has been added
+// Returns VWAP for a trading pair
 func (pr *PairVWAP) GetVWAP() float32 {
 	return pr.vWAP
 }
 
 func (pr *PairVWAP) AggregateTrade(pair string, trade *Trade) float32 {
-	if len(pr.Trades) >= pr.Limit {
-		oldestPairQuantity := pr.Trades[0].Quantity
-		oldestPairPrice := pr.Trades[0].Price
+	if len(pr.trades) >= pr.limit {
+		oldestPairQuantity := pr.trades[0].Quantity
+		oldestPairPrice := pr.trades[0].Price
 
-		if pr.Limit == 1 {
-			pr.Trades = nil
+		if pr.limit == 1 {
+			pr.trades = nil
 		} else {
-			pr.Trades = pr.Trades[1:]
+			pr.trades = pr.trades[1:]
 		}
 
 		pr.totalWeightedQuantityPrice -= oldestPairPrice * oldestPairQuantity
 		pr.totalQuantity -= oldestPairQuantity
 	}
 
-	pr.Trades = append(pr.Trades, trade)
+	pr.trades = append(pr.trades, trade)
 	pr.totalWeightedQuantityPrice += trade.Price * trade.Quantity
 	pr.totalQuantity += trade.Quantity
 
@@ -82,8 +92,8 @@ func StreamPairsVWAP(matches <-chan subscription.Match, dataPoints int) (<-chan 
 					// As we already know beforehand the maximum size of this slice, Preallocating it will
 					// add a performance boost but also create the need of having to manage the actual used
 					// space for each pair in another field. IMO for this case such optimization is not needed.
-					Trades: []*Trade{},
-					Limit:  dataPoints,
+					trades: []*Trade{},
+					limit:  dataPoints,
 				}
 				tradingPair = tradingPairs[match.ProductID]
 			}
