@@ -3,14 +3,13 @@ package subscription
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"os"
 	"os/signal"
 	"regexp"
 	"time"
 
 	"github.com/gorilla/websocket"
-	logger "github.com/rem1niscence/realtime-VWAP/pkg/log"
-	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -41,8 +40,6 @@ func SubscribeToMatches(address string, pairs []string) (<-chan Match, error) {
 	if arePairsValid := validatePairs(pairs); !arePairsValid {
 		return nil, ErrInvalidPair
 	}
-
-	logger.Log.Debug("Connecting to:", address)
 
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
@@ -81,25 +78,21 @@ func SubscribeToMatches(address string, pairs []string) (<-chan Match, error) {
 				// Inspired from: https://github.com/gorilla/websocket/blob/master/examples/echo/client.go#L71
 				err := conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 				if err != nil {
-					logger.Log.Error("ws close:", err)
+					log.Println("ws close:", err)
 					return
 				}
 				conn.Close()
 			default:
 				_, message, err := conn.ReadMessage()
 				if err != nil {
-					logger.Log.WithFields(logrus.Fields{
-						"error": err.Error(),
-					}).Error("error reading websocket message")
+					log.Printf("read websocket message: %s\n", err.Error())
 					return
 				}
 
 				var match Match
 				err = json.Unmarshal(message, &match)
 				if err != nil {
-					logger.Log.WithFields(logrus.Fields{
-						"error": err.Error(),
-					}).Error("error parsing websocket message")
+					log.Printf("parse websocket message: %s\n", err.Error())
 					continue
 				}
 

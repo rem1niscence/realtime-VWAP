@@ -2,16 +2,15 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"runtime"
 	"text/tabwriter"
 	"time"
 
-	logger "github.com/rem1niscence/realtime-VWAP/pkg/log"
 	"github.com/rem1niscence/realtime-VWAP/subscription"
 	calculator "github.com/rem1niscence/realtime-VWAP/vwap_calculator"
-	"github.com/sirupsen/logrus"
 )
 
 func main() {
@@ -19,20 +18,16 @@ func main() {
 
 	matches, err := subscription.SubscribeToMatches(options.OriginURL, options.Pairs)
 	if err != nil {
-		logger.Log.WithFields(logrus.Fields{
-			"error": err.Error(),
-		}).Fatal("error subscribing to matches")
+		log.Fatalf("subscribe to matches: %s\n", err.Error())
 	}
 	vwaps, err := calculator.StreamPairsVWAP(matches, options.Limit)
 	if err != nil {
-		logger.Log.WithFields(logrus.Fields{
-			"error": err.Error(),
-		}).Fatal("error setting VWAP stream")
+		log.Fatalf("VWAP stream: %s\n", err.Error())
 	}
 
 	clear, canClearScreen := clearScreen()
 	if !canClearScreen {
-		logger.Log.Info("Sorry, your OS does not support terminal clearing. Table results will be appended.")
+		log.Println("Sorry, your OS does not support terminal clearing. Table results will be appended.")
 	}
 
 	pairsVWAP := map[string]float32{}
