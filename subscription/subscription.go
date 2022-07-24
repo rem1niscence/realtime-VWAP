@@ -10,8 +10,13 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// Subscriber holds the methods relating to setting up a connection to a match channel.
+type Subscriber interface {
+	SubscribeToMatches(address string, pairs []string) <-chan Match
+}
+
 var (
-	// ErrInvalidPair when a pair with an invalid format is submitted
+	// ErrInvalidPair when a pair with an invalid format is submitted.
 	ErrInvalidPair = errors.New("subscriber: invalid pair format. Format must be '{min 3 uppercase}-{min 3 uppercase}'")
 )
 
@@ -29,11 +34,7 @@ type Match struct {
 	Time         time.Time `json:"time"`
 }
 
-// Subscriber holds the methods relating to setting up a connection to a match channel
-type Subscriber interface {
-	SubscribeToMatches(address string, pairs []string) <-chan Match
-}
-
+// SubscribeToMatches returns a channel to listen to trading operations for the given pairs.
 func SubscribeToMatches(address string, pairs []string) (<-chan Match, error) {
 	if arePairsValid := validatePairs(pairs); !arePairsValid {
 		return nil, ErrInvalidPair
