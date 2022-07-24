@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
-	"os"
-	"os/signal"
 	"regexp"
 	"time"
 
@@ -41,9 +39,6 @@ func SubscribeToMatches(address string, pairs []string) (<-chan Match, error) {
 		return nil, ErrInvalidPair
 	}
 
-	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt)
-
 	conn, _, err := websocket.DefaultDialer.Dial(address, nil)
 	if err != nil {
 		return nil, err
@@ -70,34 +65,21 @@ func SubscribeToMatches(address string, pairs []string) (<-chan Match, error) {
 	matches := make(chan Match)
 	go func() {
 		defer close(matches)
+		defer conn.Close()
 		for {
-			select {
-			case <-interrupt:
-				// Cleanly close the connection by sending a close message and then
-				// waiting (with timeout) for the server to close the connection.
-				// Inspired from: https://github.com/gorilla/websocket/blob/master/examples/echo/client.go#L71
-				err := conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-				if err != nil {
-					log.Println("ws close:", err)
-					return
-				}
-				conn.Close()
-			default:
-				_, message, err := conn.ReadMessage()
-				if err != nil {
-					log.Printf("read websocket message: %s\n", err.Error())
-					return
-				}
-
-				var match Match
-				err = json.Unmarshal(message, &match)
-				if err != nil {
-					log.Printf("parse websocket message: %s\n", err.Error())
-					continue
-				}
-
-				matches <- match
+			var match Match
+			err := conn.ReadJSON(&match)
+			if err != nil {
+				log.Printf("read websocket message: %s\n", err.Error())
+				continue
 			}
+
+			// Invalid match, do not send.
+			if len(match.ProductID) == 0 {
+				continue
+			}
+
+			matches <- match
 		}
 	}()
 

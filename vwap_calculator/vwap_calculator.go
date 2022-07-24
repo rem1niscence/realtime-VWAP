@@ -76,11 +76,6 @@ func StreamPairsVWAP(matches <-chan subscription.Match, dataPoints int) (<-chan 
 
 	go func() {
 		for match := range matches {
-			// Matches might come empty
-			if len(match.ProductID) == 0 {
-				continue
-			}
-
 			tradingPair, ok := tradingPairs[match.ProductID]
 			if !ok {
 				tradingPairs[match.ProductID] = &PairVWAP{
