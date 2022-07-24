@@ -51,7 +51,7 @@ func main() {
 		}
 		w.Flush()
 
-		fmt.Println("--------------\nlast updated:", time.Now().UTC())
+		fmt.Println("--------------\nLast updated:", time.Now().UTC())
 	}
 }
 
