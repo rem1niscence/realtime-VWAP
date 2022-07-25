@@ -8,7 +8,7 @@ The design of this is quite simple but functional, work is splitted mainly betwe
 The first goroutine is inside the `SubscribeToMatches` function, which connects to the Coinbase API and it keeps listening to any
 upcoming trade for the specified pairs, exposing a channel on which other goroutines can listen to the results obtained.
 From there on the second main goroutine inside `StreamPairsVWAP` takes the channel exposed by the previous function and proceeds to
-calculate and save the VWAP of the given trade. Thia function also exposes a channel to listen to the VWAP results once they're calculated and this last channel is used by the `main` goroutine to print the results to `std`. This design does not make any
+calculate and save the VWAP of the given trade. This function also exposes a channel to listen to the VWAP results once they're calculated and this last channel is used by the `main` goroutine to print the results to `std`. This design does not make any
 assumption more than the default environment values in the [options.go](cmd/options.go).
 
 ## How to run this
